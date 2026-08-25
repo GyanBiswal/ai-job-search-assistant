@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.aijobsearch.backend.dto.ai.StructuredResume;
 
 @RestController
 @RequestMapping("/api/resumes")
@@ -32,6 +33,13 @@ public class ResumeController {
     public ResponseEntity<ResumeResponse> getMyResume(Authentication authentication) {
         User user = getCurrentUser(authentication);
         ResumeResponse response = resumeService.getMyResume(user.getId());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/structure")
+    public ResponseEntity<StructuredResume> structure(Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        StructuredResume response = resumeService.structureResume(user.getId());
         return ResponseEntity.ok(response);
     }
 

@@ -1,12 +1,15 @@
 package com.aijobsearch.backend.service;
 
 import com.aijobsearch.backend.dto.ResumeResponse;
+import com.aijobsearch.backend.dto.ai.StructuredResume;
 import com.aijobsearch.backend.entity.Resume;
 import com.aijobsearch.backend.entity.User;
 import com.aijobsearch.backend.exception.InvalidFileException;
 import com.aijobsearch.backend.exception.ResumeNotFoundException;
 import com.aijobsearch.backend.exception.ResumeProcessingException;
 import com.aijobsearch.backend.repository.ResumeRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -28,6 +31,8 @@ import java.util.UUID;
 public class ResumeService {
 
     private final ResumeRepository resumeRepository;
+    private final AiResumeAnalyzer aiResumeAnalyzer;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.file.upload-dir}")
     private String uploadDir;
@@ -47,6 +52,9 @@ public class ResumeService {
         resume.setStoredFilePath(storedFilePath);
         resume.setExtractedText(extractedText);
         resume.setUploadedAt(LocalDateTime.now());
+        // A newly uploaded resume invalidates any previous AI structuring
+        resume.setStructuredData(null);
+        resume.setStructuredAt(null);
 
         Resume saved = resumeRepository.save(resume);
         return toResponse(saved);
@@ -56,6 +64,23 @@ public class ResumeService {
         Resume resume = resumeRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResumeNotFoundException("No resume uploaded yet"));
         return toResponse(resume);
+    }
+
+    public StructuredResume structureResume(Long userId) {
+        Resume resume = resumeRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResumeNotFoundException("No resume uploaded yet"));
+
+        StructuredResume structured = aiResumeAnalyzer.structureResume(resume.getExtractedText());
+
+        try {
+            resume.setStructuredData(objectMapper.writeValueAsString(structured));
+            resume.setStructuredAt(LocalDateTime.now());
+            resumeRepository.save(resume);
+        } catch (JsonProcessingException e) {
+            throw new ResumeProcessingException("Failed to save structured resume data: " + e.getMessage());
+        }
+
+        return structured;
     }
 
     private void validateFile(MultipartFile file) {
@@ -109,11 +134,21 @@ public class ResumeService {
     }
 
     private ResumeResponse toResponse(Resume resume) {
+        StructuredResume structured = null;
+        if (resume.getStructuredData() != null) {
+            try {
+                structured = objectMapper.readValue(resume.getStructuredData(), StructuredResume.class);
+            } catch (JsonProcessingException e) {
+                structured = null; // Don't break the whole response over a parse issue
+            }
+        }
+
         return ResumeResponse.builder()
                 .id(resume.getId())
                 .originalFileName(resume.getOriginalFileName())
                 .extractedText(resume.getExtractedText())
                 .uploadedAt(resume.getUploadedAt())
+                .structuredResume(structured)
                 .build();
     }
 }

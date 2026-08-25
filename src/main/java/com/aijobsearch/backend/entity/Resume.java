@@ -35,6 +35,12 @@ public class Resume {
     @Column(name = "extracted_text", nullable = false, columnDefinition = "TEXT")
     private String extractedText;
 
+    @Column(name = "structured_data", columnDefinition = "TEXT")
+    private String structuredData;
+
+    @Column(name = "structured_at")
+    private LocalDateTime structuredAt;
+
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
 }
