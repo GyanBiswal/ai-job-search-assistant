@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.aijobsearch.backend.dto.MatchResult;
 
 import java.util.List;
 
@@ -49,6 +50,13 @@ public class JobController {
     public ResponseEntity<StructuredJobDescription> analyzeJob(@PathVariable Long id, Authentication authentication) {
         User user = getCurrentUser(authentication);
         StructuredJobDescription response = jobService.analyzeJob(id, user.getId());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/match")
+    public ResponseEntity<MatchResult> calculateMatch(@PathVariable Long id, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        MatchResult response = jobService.calculateMatch(id, user.getId());
         return ResponseEntity.ok(response);
     }
 

@@ -18,4 +18,6 @@ public class JobResponse {
     private LocalDateTime createdAt;
     private LocalDateTime analyzedAt;
     private StructuredJobDescription structuredAnalysis;
+    private LocalDateTime matchCalculatedAt;
+    private MatchResult matchResult;
 }

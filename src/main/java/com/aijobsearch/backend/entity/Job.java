@@ -44,6 +44,12 @@ public class Job {
     @Column(name = "analyzed_at")
     private LocalDateTime analyzedAt;
 
+    @Column(name = "match_result_data", columnDefinition = "TEXT")
+    private String matchResultData;
+
+    @Column(name = "match_calculated_at")
+    private LocalDateTime matchCalculatedAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

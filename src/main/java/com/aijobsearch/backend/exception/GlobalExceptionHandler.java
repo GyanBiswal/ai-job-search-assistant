@@ -62,4 +62,18 @@ public class GlobalExceptionHandler {
         body.put("error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
+
+    @ExceptionHandler(JobNotAnalyzedException.class)
+    public ResponseEntity<Map<String, String>> handleJobNotAnalyzed(JobNotAnalyzedException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(ResumeNotStructuredException.class)
+    public ResponseEntity<Map<String, String>> handleResumeNotStructured(ResumeNotStructuredException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
 }
