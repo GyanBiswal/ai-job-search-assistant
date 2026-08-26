@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -81,6 +82,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleMatchNotCalculated(MatchNotCalculatedException ex) {
         Map<String, String> body = new HashMap<>();
         body.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(SuggestionNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleSuggestionNotFound(SuggestionNotFoundException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleMessageNotReadable(HttpMessageNotReadableException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", "Malformed request body — check your JSON syntax and field values (e.g. status must be ACCEPTED or REJECTED).");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 }
