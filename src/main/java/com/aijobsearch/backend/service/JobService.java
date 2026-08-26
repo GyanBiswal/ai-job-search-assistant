@@ -1,8 +1,10 @@
 package com.aijobsearch.backend.service;
 
 import com.aijobsearch.backend.dto.JobDescriptionRequest;
+import com.aijobsearch.backend.dto.JobRecommendation;
 import com.aijobsearch.backend.dto.JobResponse;
 import com.aijobsearch.backend.dto.MatchResult;
+import com.aijobsearch.backend.dto.ai.RecommendationReasoning;
 import com.aijobsearch.backend.dto.ai.StructuredJobDescription;
 import com.aijobsearch.backend.dto.ai.StructuredResume;
 import com.aijobsearch.backend.entity.Job;
@@ -11,6 +13,7 @@ import com.aijobsearch.backend.entity.User;
 import com.aijobsearch.backend.exception.JobNotAnalyzedException;
 import com.aijobsearch.backend.exception.JobNotFoundException;
 import com.aijobsearch.backend.exception.JobProcessingException;
+import com.aijobsearch.backend.exception.MatchNotCalculatedException;
 import com.aijobsearch.backend.exception.ResumeNotFoundException;
 import com.aijobsearch.backend.exception.ResumeNotStructuredException;
 import com.aijobsearch.backend.repository.JobRepository;
@@ -31,6 +34,8 @@ public class JobService {
     private final ResumeRepository resumeRepository;
     private final AiJobAnalyzer aiJobAnalyzer;
     private final SkillMatchingService skillMatchingService;
+    private final RecommendationCategorizer recommendationCategorizer;
+    private final AiRecommendationAnalyzer aiRecommendationAnalyzer;
     private final ObjectMapper objectMapper;
 
     public JobResponse saveJobDescription(JobDescriptionRequest request, User user) {
@@ -116,9 +121,49 @@ public class JobService {
         }
     }
 
+    public JobRecommendation generateRecommendation(Long jobId, Long userId) {
+        Job job = jobRepository.findByIdAndUserId(jobId, userId)
+                .orElseThrow(() -> new JobNotFoundException("Job not found"));
+
+        if (job.getStructuredData() == null) {
+            throw new JobNotAnalyzedException("Analyze this job description before generating a recommendation");
+        }
+        if (job.getMatchResultData() == null) {
+            throw new MatchNotCalculatedException("Calculate the match score before generating a recommendation");
+        }
+
+        try {
+            StructuredJobDescription jobAnalysis =
+                    objectMapper.readValue(job.getStructuredData(), StructuredJobDescription.class);
+            MatchResult matchResult =
+                    objectMapper.readValue(job.getMatchResultData(), MatchResult.class);
+
+            String category = recommendationCategorizer.categorize(matchResult.matchScorePercent());
+            RecommendationReasoning reasoning =
+                    aiRecommendationAnalyzer.generateReasoning(category, matchResult, jobAnalysis);
+
+            JobRecommendation recommendation = new JobRecommendation(
+                    category,
+                    matchResult.matchScorePercent(),
+                    reasoning.reasoning(),
+                    reasoning.keyStrengths(),
+                    reasoning.keyGaps()
+            );
+
+            job.setRecommendationData(objectMapper.writeValueAsString(recommendation));
+            job.setRecommendationCalculatedAt(LocalDateTime.now());
+            jobRepository.save(job);
+
+            return recommendation;
+        } catch (JsonProcessingException e) {
+            throw new JobProcessingException("Failed to generate recommendation: " + e.getMessage());
+        }
+    }
+
     private JobResponse toResponse(Job job) {
         StructuredJobDescription structured = parseQuietly(job.getStructuredData(), StructuredJobDescription.class);
         MatchResult matchResult = parseQuietly(job.getMatchResultData(), MatchResult.class);
+        JobRecommendation recommendation = parseQuietly(job.getRecommendationData(), JobRecommendation.class);
 
         return JobResponse.builder()
                 .id(job.getId())
@@ -130,6 +175,8 @@ public class JobService {
                 .structuredAnalysis(structured)
                 .matchCalculatedAt(job.getMatchCalculatedAt())
                 .matchResult(matchResult)
+                .recommendationCalculatedAt(job.getRecommendationCalculatedAt())
+                .recommendation(recommendation)
                 .build();
     }
 

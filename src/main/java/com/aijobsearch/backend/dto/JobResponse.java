@@ -20,4 +20,6 @@ public class JobResponse {
     private StructuredJobDescription structuredAnalysis;
     private LocalDateTime matchCalculatedAt;
     private MatchResult matchResult;
+    private LocalDateTime recommendationCalculatedAt;
+    private JobRecommendation recommendation;
 }

@@ -50,6 +50,12 @@ public class Job {
     @Column(name = "match_calculated_at")
     private LocalDateTime matchCalculatedAt;
 
+    @Column(name = "recommendation_data", columnDefinition = "TEXT")
+    private String recommendationData;
+
+    @Column(name = "recommendation_calculated_at")
+    private LocalDateTime recommendationCalculatedAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

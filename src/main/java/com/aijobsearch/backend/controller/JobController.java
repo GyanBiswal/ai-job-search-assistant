@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.aijobsearch.backend.dto.MatchResult;
+import com.aijobsearch.backend.dto.JobRecommendation;
 
 import java.util.List;
 
@@ -57,6 +58,13 @@ public class JobController {
     public ResponseEntity<MatchResult> calculateMatch(@PathVariable Long id, Authentication authentication) {
         User user = getCurrentUser(authentication);
         MatchResult response = jobService.calculateMatch(id, user.getId());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/recommendation")
+    public ResponseEntity<JobRecommendation> generateRecommendation(@PathVariable Long id, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        JobRecommendation response = jobService.generateRecommendation(id, user.getId());
         return ResponseEntity.ok(response);
     }
 
