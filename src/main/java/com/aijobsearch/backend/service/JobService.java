@@ -112,6 +112,7 @@ public class JobService {
             MatchResult matchResult = skillMatchingService.calculateMatch(resumeAnalysis.skills(), jobAnalysis);
 
             job.setMatchResultData(objectMapper.writeValueAsString(matchResult));
+            job.setMatchScorePercent(matchResult.matchScorePercent());
             job.setMatchCalculatedAt(LocalDateTime.now());
             jobRepository.save(job);
 

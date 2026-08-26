@@ -56,6 +56,9 @@ public class Job {
     @Column(name = "recommendation_calculated_at")
     private LocalDateTime recommendationCalculatedAt;
 
+    @Column(name = "match_score_percent")
+    private Integer matchScorePercent;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
